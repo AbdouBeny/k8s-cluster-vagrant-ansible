@@ -1,0 +1,12 @@
+# ansible/roles/worker/tasks/main.yml
+- name: Copy the join command to server location
+  copy:
+    src: /vagrant/join-command.sh
+    dest: /tmp/join-command.sh
+    mode: '0755'
+    remote_src: yes
+
+
+- name: Join the node to cluster
+  command: sh /tmp/join-command.sh
+
