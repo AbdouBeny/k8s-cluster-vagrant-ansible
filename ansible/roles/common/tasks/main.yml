@@ -52,7 +52,7 @@
 
 - name: Apply sysctl parameters without reboot
   ansible.builtin.command: sysctl --system
-  
+
 - name: Add vagrant user to docker group
   user:
     name: vagrant
@@ -77,12 +77,8 @@
     path: /etc/containerd/config.toml
     regexp: 'SystemdCgroup = false'
     replace: 'SystemdCgroup = true'
-
-- name: Restart containerd
-  systemd:
-    name: containerd
-    state: restarted
-    enabled: yes
+  notify:
+    - Restart containerd
 
 - name: Add Kubernetes GPG key
   get_url:
@@ -117,3 +113,12 @@
 - name: Disable swap
   command: swapoff -a
   when: ansible_swaptotal_mb > 0
+
+- name: Configure kubelet to use node private IP
+  ansible.builtin.lineinfile:
+    path: /etc/default/kubelet
+    line: 'KUBELET_EXTRA_ARGS="--node-ip={{ node_ip }}"'
+    create: yes
+    state: present
+  notify:
+    - Restart kubelet

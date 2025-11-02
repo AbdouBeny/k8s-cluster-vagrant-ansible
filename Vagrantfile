@@ -17,24 +17,37 @@ Vagrant.configure("2") do |config|
   config.vm.define MASTER_NAME do |master|
     master.vm.hostname = MASTER_NAME
     master.vm.network "private_network", ip: "#{NODE_NETWORK_BASE}.10"
+    master.vm.provision "ansible" do |ansible|
+      ansible.playbook = "ansible/playbook.yml"
+      # inventory
+      ansible.groups = {
+        "master" => ["#{MASTER_NAME}"],
+        "worker" => ["worker-[1:#{WORKER_NBR}]"]
+      }
+      ansible.extra_vars = {
+        master_ip: "#{NODE_NETWORK_BASE}.10",
+        pod_network_cidr: "#{POD_NETWORK}",
+        node_ip: "#{NODE_NETWORK_BASE}.10"
+      }
+    end
   end
   # WORKERS CONFIG
   (1..WORKER_NBR).each do |i|
     config.vm.define "worker-#{i}" do |worker|
       worker.vm.hostname = "worker-#{i}"
       worker.vm.network "private_network", ip: "#{NODE_NETWORK_BASE}.#{i + 10}"
+      worker.vm.provision "ansible" do |ansible|
+        ansible.playbook = "ansible/playbook.yml"
+        # inventory
+        ansible.groups = {
+          "master" => ["#{MASTER_NAME}"],
+          "worker" => ["worker-[1:#{WORKER_NBR}]"]
+        }
+        ansible.extra_vars = {
+          pod_network_cidr: "#{POD_NETWORK}",
+          node_ip: "#{NODE_NETWORK_BASE}.#{i + 10}"
+        }
+      end
     end
   end  
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "ansible/playbook.yml"
-    # inventory
-    ansible.groups = {
-      "master" => ["#{MASTER_NAME}"],
-      "worker" => ["worker-[1:#{WORKER_NBR}]"]
-    }
-    ansible.extra_vars = {
-      master_ip: "#{NODE_NETWORK_BASE}.10",
-      pod_network_cidr: "#{POD_NETWORK}"
-    }
-  end
 end
